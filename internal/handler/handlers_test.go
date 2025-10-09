@@ -76,7 +76,7 @@ func TestV1Encrypt_ValidPrivateKey(t *testing.T) {
 	require.NoError(t, err)
 
 	input := apiV1.RestEncryptInput{PaasName: testPaasName, Secret: privKeyPEM}
-	w := perform(r, http.MethodPost, "/apiV1/encrypt", input)
+	w := perform(r, http.MethodPost, "/v1/encrypt", input)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -94,7 +94,7 @@ func TestV1Encrypt_InvalidPrivateKey(t *testing.T) {
 
 	// Not a valid SSH private key
 	input := apiV1.RestEncryptInput{PaasName: testPaasName, Secret: "not-a-key"}
-	w := perform(r, http.MethodPost, "/apiV1/encrypt", input)
+	w := perform(r, http.MethodPost, "/v1/encrypt", input)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
