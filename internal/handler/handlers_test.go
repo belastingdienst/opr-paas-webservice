@@ -17,7 +17,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	v1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
+	apiV1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
 	"github.com/belastingdienst/opr-paas-webservice/internal/config"
 	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
 	"github.com/belastingdienst/opr-paas-webservice/test/testutils"
@@ -75,12 +75,12 @@ func TestV1Encrypt_ValidPrivateKey(t *testing.T) {
 	privKeyPEM, err := generateRSAPrivateKeyPEM(bits)
 	require.NoError(t, err)
 
-	input := v1.RestEncryptInput{PaasName: testPaasName, Secret: privKeyPEM}
-	w := perform(r, http.MethodPost, "/v1/encrypt", input)
+	input := apiV1.RestEncryptInput{PaasName: testPaasName, Secret: privKeyPEM}
+	w := perform(r, http.MethodPost, "/apiV1/encrypt", input)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp v1.RestEncryptResult
+	var resp apiV1.RestEncryptResult
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.True(t, resp.Valid, "expected Valid=true for a valid private key")
 	assert.Equal(t, testPaasName, resp.PaasName)
@@ -93,12 +93,12 @@ func TestV1Encrypt_InvalidPrivateKey(t *testing.T) {
 	r.POST("/v1/encrypt", h.V1Encrypt)
 
 	// Not a valid SSH private key
-	input := v1.RestEncryptInput{PaasName: testPaasName, Secret: "not-a-key"}
-	w := perform(r, http.MethodPost, "/v1/encrypt", input)
+	input := apiV1.RestEncryptInput{PaasName: testPaasName, Secret: "not-a-key"}
+	w := perform(r, http.MethodPost, "/apiV1/encrypt", input)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp v1.RestEncryptResult
+	var resp apiV1.RestEncryptResult
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.False(t, resp.Valid, "expected Valid=false for an invalid private key")
 	assert.Equal(t, testPaasName, resp.PaasName)
