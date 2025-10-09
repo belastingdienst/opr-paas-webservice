@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	apiV1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
+	apiv1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
 	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
 	internal "github.com/belastingdienst/opr-paas-webservice/internal/services"
 	"github.com/belastingdienst/opr-paas-webservice/internal/version"
@@ -30,7 +30,7 @@ func NewHandler(cryptMgr *cryptmgr.Manager) *Handler {
 
 // V1Encrypt encrypts a secret and returns the encrypted value
 func (h *Handler) V1Encrypt(c *gin.Context) {
-	var input apiV1.RestEncryptInput
+	var input apiv1.RestEncryptInput
 	if err := c.BindJSON(&input); err != nil {
 		return
 	}
@@ -40,23 +40,23 @@ func (h *Handler) V1Encrypt(c *gin.Context) {
 		if err != nil {
 			return
 		}
-		c.IndentedJSON(http.StatusOK, apiV1.RestEncryptResult{
+		c.IndentedJSON(http.StatusOK, apiv1.RestEncryptResult{
 			PaasName:  input.PaasName,
 			Encrypted: encrypted,
 			Valid:     true,
 		})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, apiV1.RestEncryptResult{
+	c.IndentedJSON(http.StatusOK, apiv1.RestEncryptResult{
 		PaasName: input.PaasName, Valid: false,
 	})
 }
 
 // V1CheckPaas checks whether a Paas can be decrypted using provided private/public keys
 func (h *Handler) V1CheckPaas(c *gin.Context) {
-	var input apiV1.RestCheckPaasInput
+	var input apiv1.RestCheckPaasInput
 	if err := c.BindJSON(&input); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, apiV1.RestCheckPaasResult{Error: err.Error()})
+		c.IndentedJSON(http.StatusBadRequest, apiv1.RestCheckPaasResult{Error: err.Error()})
 		return
 	}
 	rsa := h.CryptMgr.GetOrCreate(input.Paas.Name)
@@ -64,7 +64,7 @@ func (h *Handler) V1CheckPaas(c *gin.Context) {
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to decrypt data") ||
 			strings.Contains(err.Error(), "base64") {
-			c.IndentedJSON(http.StatusUnprocessableEntity, apiV1.RestCheckPaasResult{
+			c.IndentedJSON(http.StatusUnprocessableEntity, apiv1.RestCheckPaasResult{
 				PaasName: input.Paas.Name, Decrypted: false, Error: err.Error(),
 			})
 			return
@@ -72,7 +72,7 @@ func (h *Handler) V1CheckPaas(c *gin.Context) {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	c.IndentedJSON(http.StatusOK, apiV1.RestCheckPaasResult{
+	c.IndentedJSON(http.StatusOK, apiv1.RestCheckPaasResult{
 		PaasName: input.Paas.Name, Decrypted: true,
 	})
 }
