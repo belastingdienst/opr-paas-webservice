@@ -44,7 +44,7 @@ func setupHandler(t *testing.T) *Handler {
 	cfg.PublicKeyPath = pub.Name()
 	cfg.PrivateKeyPath = priv.Name()
 
-	mgr := cryptmgr.NewManager(cfg)
+	mgr := cryptmgr.NewManager(&cfg)
 	return NewHandler(mgr)
 }
 

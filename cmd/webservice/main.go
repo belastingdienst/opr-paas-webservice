@@ -21,7 +21,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	cfg := config.NewWSConfig()
-	router := server.NewRouter(cfg)
+	router := server.NewRouter(&cfg)
 
 	log.Printf("Listening on: %s", cfg.Endpoint)
 	if err := router.Run(cfg.Endpoint); err != nil {

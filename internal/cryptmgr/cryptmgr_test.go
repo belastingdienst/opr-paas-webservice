@@ -16,7 +16,7 @@ func Test_GetOrCreate(t *testing.T) {
 	cfg.PublicKeyPath = pub.Name()
 	cfg.PrivateKeyPath = priv.Name()
 
-	mgr := NewManager(cfg)
+	mgr := NewManager(&cfg)
 
 	// first call should create a new crypt
 	c := mgr.GetOrCreate("paasName")

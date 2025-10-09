@@ -31,7 +31,7 @@ func TestCheckPaas(t *testing.T) {
 	cfg.PublicKeyPath = pub.Name()
 	cfg.PrivateKeyPath = priv.Name()
 
-	mgr := cryptmgr.NewManager(cfg)
+	mgr := cryptmgr.NewManager(&cfg)
 	rsa := mgr.GetOrCreate(paasName)
 
 	encrypted, err := rsa.Encrypt([]byte("My test string"))

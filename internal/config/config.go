@@ -74,7 +74,7 @@ func formatEndpoint(endpoint string) string {
 }
 
 // NewWSConfig returns a pointer to a new WSConfig
-func NewWSConfig() (config *WsConfig) {
+func NewWSConfig() (config WsConfig) {
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath

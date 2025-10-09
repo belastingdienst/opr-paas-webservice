@@ -37,7 +37,7 @@ func newTestConfig(t *testing.T) *config.WsConfig {
 	cfg.PrivateKeyPath = priv.Name()
 	// Allow all origins to exercise AllowAllOrigins branch
 	cfg.AllowedOrigins = []string{"*"}
-	return cfg
+	return &cfg
 }
 
 func TestNoSniffIsSet(t *testing.T) {
