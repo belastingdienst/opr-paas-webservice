@@ -17,7 +17,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas-webservice/api/v1"
+	v1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
 	"github.com/belastingdienst/opr-paas-webservice/internal/config"
 	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
 	"github.com/belastingdienst/opr-paas-webservice/test/testutils"

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas-webservice/api/v1"
+	v1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
 	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
 	internal "github.com/belastingdienst/opr-paas-webservice/internal/services"
 	"github.com/belastingdienst/opr-paas-webservice/internal/version"
