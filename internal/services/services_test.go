@@ -9,9 +9,9 @@ package services
 import (
 	"testing"
 
-	"github.com/belastingdienst/opr-paas-webservice/internal/config"
-	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
-	"github.com/belastingdienst/opr-paas-webservice/test/testutils"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/cryptmgr"
+	"github.com/belastingdienst/opr-paas-webservice/v3/test/testutils"
 	"github.com/stretchr/testify/require"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"

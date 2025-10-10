@@ -3,8 +3,8 @@ package cryptmgr
 import (
 	"testing"
 
-	"github.com/belastingdienst/opr-paas-webservice/internal/config"
-	"github.com/belastingdienst/opr-paas-webservice/test/testutils"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	"github.com/belastingdienst/opr-paas-webservice/v3/test/testutils"
 	"github.com/stretchr/testify/assert"
 )
 

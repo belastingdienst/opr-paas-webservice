@@ -12,9 +12,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas-webservice/internal/config"
-	v "github.com/belastingdienst/opr-paas-webservice/internal/version"
-	"github.com/belastingdienst/opr-paas-webservice/test/testutils"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	v "github.com/belastingdienst/opr-paas-webservice/v3/internal/version"
+	"github.com/belastingdienst/opr-paas-webservice/v3/test/testutils"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

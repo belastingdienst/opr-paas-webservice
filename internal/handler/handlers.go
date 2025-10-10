@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"strings"
 
-	apiv1 "github.com/belastingdienst/opr-paas-webservice/api/v1"
-	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
-	internal "github.com/belastingdienst/opr-paas-webservice/internal/services"
-	"github.com/belastingdienst/opr-paas-webservice/internal/version"
+	apiv1 "github.com/belastingdienst/opr-paas-webservice/v3/api/v1"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/cryptmgr"
+	internal "github.com/belastingdienst/opr-paas-webservice/v3/internal/services"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/version"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
 )
