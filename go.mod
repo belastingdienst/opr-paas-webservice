@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/belastingdienst/opr-paas-crypttool v1.0.0
-	github.com/belastingdienst/opr-paas/v3 v3.9.1
+	github.com/belastingdienst/opr-paas/v3 v3.10.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
