@@ -9,9 +9,9 @@ package main
 import (
 	"log"
 
-	"github.com/belastingdienst/opr-paas-webservice/internal/config"
-	"github.com/belastingdienst/opr-paas-webservice/internal/server"
-	"github.com/belastingdienst/opr-paas-webservice/internal/version"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/server"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/version"
 	"github.com/gin-gonic/gin"
 )
 

@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas-webservice/internal/config"
-	"github.com/belastingdienst/opr-paas-webservice/internal/utils"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/utils"
 )
 
 // Manager is struct to manage crypts

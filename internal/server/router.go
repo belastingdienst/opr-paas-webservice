@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas-webservice/internal/config"
-	"github.com/belastingdienst/opr-paas-webservice/internal/cryptmgr"
-	handlers "github.com/belastingdienst/opr-paas-webservice/internal/handler"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/cryptmgr"
+	handlers "github.com/belastingdienst/opr-paas-webservice/v3/internal/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
