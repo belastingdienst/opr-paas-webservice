@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/utils"
 )
@@ -45,11 +45,15 @@ func (m *Manager) GetOrCreate(paasName string) *crypt.Crypt {
 		log.Println("Starting watcher")
 		m.fw = utils.NewFileWatcher(m.cfg.PrivateKeyPath, m.cfg.PublicKeyPath)
 	}
-	if m.fw.WasTriggered() || len(m.cache) == 0 {
-		m.reset()
-	}
-	if c := m.get(paasName); c != nil {
-		return c
+
+	triggered := m.fw.WasTriggered()
+
+	if !triggered {
+		if c := m.get(paasName); c != nil {
+			return c // cache hit, no reset needed
+		}
+	} else {
+		m.reset() // only reset if files actually changed
 	}
 
 	c, err := crypt.NewCryptFromFiles([]string{m.cfg.PrivateKeyPath}, m.cfg.PublicKeyPath, paasName)
