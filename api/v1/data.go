@@ -6,7 +6,7 @@ See LICENSE.md for details.
 
 package v1
 
-import "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+import "github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 
 // RestEncryptInput can be delivered to the API for encryption requests
 type RestEncryptInput struct {
@@ -23,7 +23,7 @@ type RestEncryptResult struct {
 
 // RestCheckPaasInput can be delivered to the API for checkPaas requests
 type RestCheckPaasInput struct {
-	Paas v1alpha1.Paas `json:"paas"`
+	Paas v1alpha2.Paas `json:"paas"`
 }
 
 // RestCheckPaasResult is returned by the API for checkPaas requests

@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/sirupsen/logrus"
@@ -21,9 +21,9 @@ import (
 
 // CheckPaas determines whether a Paas can be decrypted using the provided crypt
 // it returns an error containing which secrets cannot be decrypted if any
-func CheckPaas(cryptObj *crypt.Crypt, paas *v1alpha1.Paas) error {
+func CheckPaas(cryptObj *crypt.Crypt, paas *v1alpha2.Paas) error {
 	var allErrors []string
-	for key, secret := range paas.Spec.SSHSecrets {
+	for key, secret := range paas.Spec.Secrets {
 		decrypted, err := cryptObj.Decrypt(secret)
 		if err != nil {
 			errMessage := fmt.Errorf("%s: .spec.sshSecrets[%s], error: %w", paas.Name, key, err)
@@ -42,7 +42,7 @@ func CheckPaas(cryptObj *crypt.Crypt, paas *v1alpha1.Paas) error {
 
 	for capName, capability := range paas.Spec.Capabilities {
 		logrus.Debugf("capability name: %s", capName)
-		for key, secret := range capability.GetSSHSecrets() {
+		for key, secret := range capability.Secrets {
 			decrypted, err := cryptObj.Decrypt(secret)
 			if err != nil {
 				errMessage := fmt.Errorf(
