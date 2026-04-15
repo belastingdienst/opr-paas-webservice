@@ -47,6 +47,9 @@ func (fw *FileWatcher) Refresh() (err error) {
 	// - Paths that do not yet exist on the filesystem cannot be watched.
 	// - A watch will be automatically removed if the watched path is deleted or renamed. T
 	for _, p := range fw.files {
+		if p == "" {
+			continue
+		}
 		err = fw.watcher.Add(p)
 		if err != nil {
 			return fmt.Errorf("%q: %w", p, err)
