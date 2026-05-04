@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/belastingdienst/opr-paas-crypttool v1.0.0
 	github.com/belastingdienst/opr-paas/v3 v3.13.0
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.12.0
 	github.com/prometheus/client_golang v1.23.2
