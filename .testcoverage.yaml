@@ -50,6 +50,7 @@ exclude:
   paths:
    - test
    - cmd
+   - internal/utils
 
 # File name of go-test-coverage breakdown file, which can be used to
 # analyze coverage difference.
