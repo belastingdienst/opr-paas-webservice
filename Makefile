@@ -49,8 +49,18 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(GOLANGCI_LINT) run --fix
 
 .PHONY: test
-test: fmt vet gotest-coverage ## Run fmt, vet and tests with coverage.
-	go test $$(go list ./... ) -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+test: fmt unittest vet
+
+.PHONY: unittest
+unittest: fmt gotest-coverage ## Run fmt, vet and tests with coverage.
+	go test $$(go list ./... | grep -v /e2e) -coverprofile=./cover.out -coverpkg=./...
+
+.PHONY: install-go-test-coverage
+install-go-test-coverage:
+	go install github.com/vladopajic/go-test-coverage/v2@latest
+
+.PHONY: check-coverage
+check-coverage: install-go-test-coverage unittest
 	${GOTEST_COVERAGE} --config=./.testcoverage.yaml
 
 ##@ Dependencies
