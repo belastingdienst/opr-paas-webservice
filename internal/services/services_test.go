@@ -14,7 +14,7 @@ import (
 	"github.com/belastingdienst/opr-paas-webservice/v3/test/testutils"
 	"github.com/stretchr/testify/require"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,16 +37,15 @@ func TestCheckPaas(t *testing.T) {
 	encrypted, err := rsa.Encrypt([]byte("My test string"))
 	require.NoError(t, err)
 
-	toBeDecryptedPaas := &v1alpha1.Paas{
+	toBeDecryptedPaas := &v1alpha2.Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
 		},
-		Spec: v1alpha1.PaasSpec{
-			SSHSecrets: map[string]string{repoName: encrypted},
-			Capabilities: v1alpha1.PaasCapabilities{
-				"sso": v1alpha1.PaasCapability{
-					Enabled:    true,
-					SSHSecrets: map[string]string{repoName: encrypted},
+		Spec: v1alpha2.PaasSpec{
+			Secrets: map[string]string{repoName: encrypted},
+			Capabilities: v1alpha2.PaasCapabilities{
+				"sso": v1alpha2.PaasCapability{
+					Secrets: map[string]string{repoName: encrypted},
 				},
 			},
 		},
@@ -55,27 +54,26 @@ func TestCheckPaas(t *testing.T) {
 	err = CheckPaas(rsa, toBeDecryptedPaas)
 	require.NoError(t, err)
 
-	notTeBeDecryptedPaas := &v1alpha1.Paas{
+	notTeBeDecryptedPaas := &v1alpha2.Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
 		},
-		Spec: v1alpha1.PaasSpec{SSHSecrets: map[string]string{repoName: "bm90RGVjcnlwdGFibGU="}},
+		Spec: v1alpha2.PaasSpec{Secrets: map[string]string{repoName: "bm90RGVjcnlwdGFibGU="}},
 	}
 
 	// Must be able to decrypt this
 	err = CheckPaas(rsa, notTeBeDecryptedPaas)
 	require.Error(t, err)
 
-	partialToBeDecryptedPaas := &v1alpha1.Paas{
+	partialToBeDecryptedPaas := &v1alpha2.Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
 		},
-		Spec: v1alpha1.PaasSpec{
-			SSHSecrets: map[string]string{repoName: encrypted},
-			Capabilities: v1alpha1.PaasCapabilities{
-				"sso": v1alpha1.PaasCapability{
-					Enabled:    true,
-					SSHSecrets: map[string]string{repoName: "bm90RGVjcnlwdGFibGU="},
+		Spec: v1alpha2.PaasSpec{
+			Secrets: map[string]string{repoName: encrypted},
+			Capabilities: v1alpha2.PaasCapabilities{
+				"sso": v1alpha2.PaasCapability{
+					Secrets: map[string]string{repoName: "bm90RGVjcnlwdGFibGU="},
 				},
 			},
 		},
