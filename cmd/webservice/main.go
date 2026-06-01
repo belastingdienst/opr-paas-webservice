@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/server"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/version"
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	cfg := config.NewWSConfig()
+	logging.SetStaticLoggingConfig(cfg.Debug, cfg.DebugComponents)
 	router := server.NewRouter(&cfg)
 
 	log.Printf("Listening on: %s", cfg.Endpoint)

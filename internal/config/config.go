@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
 )
 
 const (
@@ -22,6 +24,8 @@ const (
 	endpointEnv         = "PAAS_ENDPOINT"
 	defaultEndpointPort = 8080
 	allowedOriginsEnv   = "PAAS_WS_ALLOWED_ORIGINS" // comma separated
+	debugEnv            = "PAAS_DEBUG"
+	debugComponentsEnv  = "PAAS_DEBUG_COMPONENTS" // comma separated
 	validHostnameSize   = 63
 	maxPort             = 65363
 )
@@ -30,9 +34,11 @@ const (
 type WsConfig struct {
 	PublicKeyPath string
 	// comma separated list of privateKeyPaths
-	PrivateKeyPath string
-	Endpoint       string
-	AllowedOrigins []string
+	PrivateKeyPath  string
+	Endpoint        string
+	AllowedOrigins  []string
+	Debug           bool
+	DebugComponents logging.Components
 }
 
 func formatEndpoint(endpoint string) string {
@@ -90,6 +96,8 @@ func NewWSConfig() (config WsConfig) {
 	if strings.TrimSpace(value) != "" {
 		config.AllowedOrigins = GetOriginsAsSlice(value)
 	}
+	config.Debug = os.Getenv(debugEnv) != ""
+	config.DebugComponents = logging.NewComponentsFromString(os.Getenv(debugComponentsEnv))
 
 	return config
 }
