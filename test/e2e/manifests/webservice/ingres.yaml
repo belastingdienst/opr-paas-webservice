@@ -1,0 +1,24 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opr-paas-webservice
+  namespace: paas-system
+  labels:
+    app.kubernetes.io/component: webservice
+    app.kubernetes.io/part-of: opr-paas
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: opr-paas.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: opr-paas-webservice
+            port:
+              name: http

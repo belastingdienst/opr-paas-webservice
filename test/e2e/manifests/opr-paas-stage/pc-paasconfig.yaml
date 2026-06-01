@@ -1,0 +1,23 @@
+---
+apiVersion: cpet.belastingdienst.nl/v1alpha2
+kind: PaasConfig
+metadata:
+  name: paas-config
+spec:
+  capabilities:
+    test:
+      quotas:
+        defaults:
+          limits.cpu: '6'
+          limits.memory: 7Gi
+          requests.cpu: '5'
+          requests.memory: 6Gi
+          requests.storage: '0'
+          thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
+        ratio: 0
+  decryptKeySecret:
+    name: example-keys
+    namespace: paas-system
+  rolemappings:
+    default:
+      - admin
