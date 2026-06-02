@@ -10,6 +10,41 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+# CONTAINER_TOOL defines the container tool to be used for building images.
+# Be aware that the target commands are only tested with Docker which is
+# scaffolded by default. However, you might want to replace it to use other
+# tools. (i.e. podman)
+CONTAINER_TOOL ?= docker
+
+# Image URL to use all building/pushing image targets
+IMG ?= webservice:latest
+
+## Tool Binaries
+KUBECTL ?= kubectl
+KUBECTL-PAAS ?= $(LOCALBIN)/kubectl-paas
+KIND ?= $(LOCALBIN)/kind
+KUSTOMIZE ?= $(LOCALBIN)/kustomize
+
+## Tool Versions
+KIND_VERSION ?= v0.30.0
+KUSTOMIZE_VERSION ?= v5.7.0
+KUBECTL-PAAS_VERSION ?= latest
+
+.PHONY: kind
+kind: $(KIND) ## Download kind locally if necessary.
+$(KIND): $(LOCALBIN)
+	$(call go-install-tool,$(KIND),sigs.k8s.io/kind,$(KIND_VERSION))
+
+.PHONY: kustomize
+kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
+$(KUSTOMIZE): $(LOCALBIN)
+	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
+
+.PHONY: kubectl-paas
+kubectl-paas: $(KUBECTL-PAAS) ## Download kustomize locally if necessary.
+$(KUBECTL-PAAS): $(LOCALBIN)
+	go build -mod=mod -o $(KUBECTL-PAAS) github.com/belastingdienst/opr-paas-cli/v2/cmd
+
 .PHONY: all
 all: build
 
@@ -103,3 +138,49 @@ mv $(1) $(1)-$(3) ;\
 } ;\
 ln -sf $(1)-$(3) $(1)
 endef
+
+# If you wish to build the manager image targeting other platforms you can use the --platform flag.
+# (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
+# More info: https://docs.docker.com/develop/develop-images/build_enhancements/
+.PHONY: image-build
+image-build: ## Build docker image with the manager.
+	$(CONTAINER_TOOL) build -t ${IMG} .
+
+.PHONY: kind-image-load
+kind-image-load: ## Build docker image with the manager.
+	${KIND} load image-archive <(${CONTAINER_TOOL} save ${IMG})
+
+.PHONY: refresh-kind
+refresh-kind: kind kind-delete-cluster kind-create-cluster
+
+.PHONY: kind-create-cluster
+kind-create-cluster: kind
+	$(KIND) create cluster
+
+.PHONY: kind-delete-cluster
+kind-delete-cluster: kind
+	$(KIND) delete cluster || echo "no existing kind cluster"
+
+.PHONY: stage-opr-paas
+stage-opr-paas: kubectl-paas
+	${KUBECTL} apply -k test/e2e/manifests/opr-paas-mock/
+	${KUBECTL} apply -k test/e2e/manifests/opr-paas-stage/
+	${KUBECTL-PAAS} generate -o yaml | ${KUBECTL} apply -f -
+
+.PHONY: deploy-webservice
+deploy-webservice:
+ifeq ($(CONTAINER_TOOL),podman)
+	$(KUBECTL) apply -k test/e2e/manifests/local-e2e-podman
+else
+	$(KUBECTL) apply -k test/e2e/manifests/webservice
+endif
+	# Using server-side apply to support re-running and to avoid annotation size limits on CRDs
+	# Wait a bit as the paas-context files rely on the previous deployed mocks
+	${KUBECTL} wait --for=condition=Available deployment/opr-paas-webservice -n paas-system --timeout=120s
+
+.PHONY: setup-e2e
+setup-e2e: kind stage-opr-paas image-build kind-image-load deploy-webservice
+
+.PHONY: test-e2e
+test-e2e:
+	#go test -v ./test/e2e

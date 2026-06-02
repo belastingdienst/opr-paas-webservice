@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opr-paas-webservice
+  namespace: paas-system
+  labels:
+    app.kubernetes.io/component: webservice
+    app.kubernetes.io/part-of: opr-paas
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: webservice
+      app.kubernetes.io/part-of: opr-paas
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: webservice
+        app.kubernetes.io/part-of: opr-paas
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - command:
+            - /webservice
+          env:
+            # We patch this in base/v?.?.?/kustomization.yaml, where we reference this key as /spec/template/spec/containers/0/env/0
+            # Make sure this stays the first env var for the first container
+            - name: PAAS_WS_ALLOWED_ORIGINS
+              value: '*'
+            - name: PAAS_PUBLIC_KEY_PATH
+              value: /secrets/paas/publicKey/publicKey
+          image: webservice:latest
+          imagePullPolicy: IfNotPresent
+          name: webservice
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 150Mi
+            requests:
+              cpu: 100m
+              memory: 75Mi
+          volumeMounts:
+            - name: paas-private-keys
+              mountPath: /secrets/paas/privateKeys
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: paas-private-keys
+          secret:
+            secretName: example-keys
