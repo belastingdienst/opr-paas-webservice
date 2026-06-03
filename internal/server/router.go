@@ -8,15 +8,61 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/config"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/cryptmgr"
-	handlers "github.com/belastingdienst/opr-paas-webservice/v3/internal/handler"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/handlers"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 )
+
+func simpleLogger(c *gin.Context) {
+	ctx, _ := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(ctx, logging.RouterComponent)
+	logger.Debug().Msg("new request")
+	c.Next()
+}
+
+func intrusiveLogger(c *gin.Context) {
+	ctx, _ := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(ctx, logging.RouterComponent)
+	logger.Debug().Msg("new request")
+	start := time.Now()
+	c.Next()
+
+	param := gin.LogFormatterParams{
+		Request: c.Request,
+		Keys:    c.Keys,
+	}
+
+	end := time.Now()
+	latency := end.Sub(start)
+
+	statusCode := c.Writer.Status()
+	clientIP := c.ClientIP()
+
+	var loggerEvent *zerolog.Event
+	if statusCode >= http.StatusInternalServerError {
+		loggerEvent = logger.Error()
+	} else if statusCode >= http.StatusBadRequest {
+		loggerEvent = logger.Warn()
+	} else {
+		loggerEvent = logger.Info()
+	}
+
+	loggerEvent.
+		Int("status", statusCode).
+		Str("ip", clientIP).
+		Dur("latency", latency).
+		Str("user_agent", param.Request.UserAgent()).
+		Msg("HTTP Request")
+}
 
 // NewRouter creates a new Gin router based on the WsConfig
 func NewRouter(cfg *config.WsConfig) *gin.Engine {
@@ -38,7 +84,12 @@ func NewRouter(cfg *config.WsConfig) *gin.Engine {
 	if err := corsCfg.Validate(); err != nil {
 		panic(fmt.Errorf("cors config invalid: %w", err))
 	}
-	router.Use(cors.New(corsCfg), gin.Logger(), gin.Recovery())
+
+	if _, exists := cfg.DebugComponents[logging.RouterComponent]; !exists && !cfg.Debug {
+		router.Use(cors.New(corsCfg), simpleLogger, gin.Recovery())
+	} else {
+		router.Use(cors.New(corsCfg), intrusiveLogger, gin.Recovery())
+	}
 
 	// Security headers
 	router.Use(func(c *gin.Context) {
@@ -52,6 +103,9 @@ func NewRouter(cfg *config.WsConfig) *gin.Engine {
 	router.GET("/version", h.Version)
 	router.POST("/v1/encrypt", h.V1Encrypt)
 	router.POST("/v1/checkpaas", h.V1CheckPaas)
+	router.POST("/v2/encrypt", h.V2Encrypt)
+	router.POST("/v2/encryptSSH", h.V2EncryptSSH)
+	router.POST("/v2/checkpaas", h.V2CheckPaas)
 	router.GET("/healthz", h.Healthz)
 	router.GET("/readyz", h.Readyz)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))

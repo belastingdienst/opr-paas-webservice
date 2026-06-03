@@ -33,6 +33,7 @@ func newTestConfig(t *testing.T) *config.WsConfig {
 	t.Cleanup(cleanup)
 
 	cfg := config.NewWSConfig()
+	cfg.Debug = true
 	cfg.PublicKeyPath = pub.Name()
 	cfg.PrivateKeyPath = priv.Name()
 	// Allow all origins to exercise AllowAllOrigins branch
