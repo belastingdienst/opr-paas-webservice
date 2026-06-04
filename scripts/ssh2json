@@ -1,0 +1,17 @@
+#! /usr/bin/env python3
+import json
+import sys
+
+
+def stdin_to_json():
+    d = {"paas": "cet-bhr"}
+
+    secret = sys.stdin.read()
+    secret.replace("\n","\\n")
+    d["secret"] = secret
+
+    print(json.dumps(d))
+
+
+if __name__ == "__main__":
+    stdin_to_json()

@@ -178,8 +178,13 @@ endif
 	# Wait a bit as the paas-context files rely on the previous deployed mocks
 	${KUBECTL} wait --for=condition=Available deployment/opr-paas-webservice -n paas-system --timeout=120s
 
+.PHONY: redeploy-webservice
+redeploy-webservice:
+	kubectl delete -n paas-system pod -l app.kubernetes.io/component=webservice --timeout=120s
+	kubectl wait --for=condition=Available deployment/opr-paas-webservice -n paas-system --timeout=120s
+
 .PHONY: setup-e2e
-setup-e2e: kind stage-opr-paas image-build kind-image-load deploy-webservice
+setup-e2e: refresh-kind stage-opr-paas image-build kind-image-load deploy-webservice
 
 .PHONY: test-e2e
 test-e2e:

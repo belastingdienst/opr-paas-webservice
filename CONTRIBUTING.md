@@ -34,6 +34,10 @@ We welcome many types of contributions including:
 For more details on development contributions, please refer to the "Developer Guide"
 section on the documentation site.
 
+## If you want to develop
+
+Checkout our [development guide](./DEVELOPMENT.md) for an opiniated option to setup a local dev environment.
+
 ## Raising Issues
 
 When you want to raise an issue, use [GitHub Issues](https://github.com/belastingdienst/opr-paas-webservice/issues/new/choose).
