@@ -30,3 +30,5 @@ site/
 .cache/
 dist/
 
+example-key
+example-key.pub
