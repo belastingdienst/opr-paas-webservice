@@ -19,7 +19,7 @@ import (
 const (
 	publicEnv           = "PAAS_PUBLIC_KEY_PATH"
 	privateKeyEnv       = "PAAS_PRIVATE_KEYS_PATH"
-	defaultPublicPath   = "/secrets/paas/publicKey"
+	defaultPublicPath   = ""
 	defaultPrivatePath  = "/secrets/paas/privateKeys"
 	endpointEnv         = "PAAS_ENDPOINT"
 	defaultEndpointPort = 8080
