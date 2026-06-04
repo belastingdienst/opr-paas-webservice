@@ -29,8 +29,6 @@ spec:
             # Make sure this stays the first env var for the first container
             - name: PAAS_WS_ALLOWED_ORIGINS
               value: '*'
-            - name: PAAS_PUBLIC_KEY_PATH
-              value: /secrets/paas/publicKey/publicKey
           image: webservice:latest
           imagePullPolicy: IfNotPresent
           name: webservice
