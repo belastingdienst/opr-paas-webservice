@@ -163,8 +163,16 @@ kind-delete-cluster: kind
 
 .PHONY: stage-opr-paas
 stage-opr-paas: kubectl-paas
-	${KUBECTL} apply -k test/e2e/manifests/opr-paas-mock/
-	${KUBECTL} apply -k test/e2e/manifests/opr-paas-stage/
+	# First server-side apply creates the CRDs; the CRs (e.g. PaasConfig) fail here
+	# because their CRDs are not established yet, so we ignore the error.
+	${KUBECTL} apply --server-side -k test/e2e/manifests/opr-paas-stage/ || true
+	# Wait for the CRDs to be established before re-applying so the CRs succeed.
+	${KUBECTL} wait --for=condition=Established --timeout=60s \
+		crd/paas.cpet.belastingdienst.nl \
+		crd/paasconfig.cpet.belastingdienst.nl \
+		crd/paasns.cpet.belastingdienst.nl
+	# Second server-side apply now succeeds for the CRs.
+	${KUBECTL} apply --server-side -k test/e2e/manifests/opr-paas-stage/
 	${KUBECTL-PAAS} generate -o yaml | ${KUBECTL} apply -f -
 
 .PHONY: deploy-webservice
