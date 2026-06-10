@@ -1,7 +1,7 @@
 github.com/Masterminds/semver/v3 v3.5.0 h1:kQceYJfbupGfZOKZQg0kou0DgAKhzDg2NZPAwZ/2OOE=
 github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
-github.com/belastingdienst/opr-paas-cli/v2 v2.0.3 h1:6j/9WOqWjH6EnssCct+PTj+xeUfriDnB4wOyS/3iCgE=
-github.com/belastingdienst/opr-paas-cli/v2 v2.0.3/go.mod h1:7kHRUC9//6qnz1OBIkTuvC7q0TRMoNqTQRTrmgvBHHY=
+github.com/belastingdienst/opr-paas-cli/v2 v2.0.5 h1:6K5N5fvpd1bJz5oPWbx2BM+GIo8a/NjHW6yQyG13gno=
+github.com/belastingdienst/opr-paas-cli/v2 v2.0.5/go.mod h1:sExS6WoDcQ5d203SOzrZHnJn06GO23T9NlAtIjHcZw8=
 github.com/belastingdienst/opr-paas/v5 v5.6.0 h1:Pv09eyNzzSMsJFvkgnXRrCnQvkhQfsfO6RiiKPpJWaE=
 github.com/belastingdienst/opr-paas/v5 v5.6.0/go.mod h1:UipDluQ+SDasNVbLcHrA2HZwg1jhhjxl+sDXaQfcWFc=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
