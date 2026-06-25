@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/belastingdienst/opr-paas-cli/v2 v2.0.6
-	github.com/belastingdienst/opr-paas/v5 v5.6.0
+	github.com/belastingdienst/opr-paas/v5 v5.7.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
@@ -14,8 +14,8 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.53.0
-	k8s.io/api v0.36.1
-	k8s.io/apimachinery v0.36.1
+	k8s.io/api v0.36.2
+	k8s.io/apimachinery v0.36.2
 )
 
 require (
