@@ -19,6 +19,8 @@ type RestEncryptResult struct {
 	PaasName  string `json:"paas"`
 	Encrypted string `json:"encrypted"`
 	Valid     bool   `json:"valid"`
+	// Error explains why the request was rejected; omitted on success
+	Error string `json:"error,omitempty"`
 }
 
 // RestCheckPaasInput can be delivered to the API for checkPaas requests
