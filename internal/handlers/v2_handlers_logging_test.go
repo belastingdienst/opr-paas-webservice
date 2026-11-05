@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/json"
 	"encoding/pem"
 	"net/http"
 	"testing"
@@ -40,11 +41,20 @@ func TestV2EncryptSSH_DoesNotLogRejectedSecret(t *testing.T) {
 	const invalidSecret = "not-a-key-but-still-secret-value"
 
 	tests := []struct {
-		name   string
-		secret string
+		name      string
+		secret    string
+		wantError string
 	}{
-		{name: "invalid key", secret: invalidSecret},
-		{name: "passphrase protected key", secret: generatePassphraseProtectedKeyPEM(t)},
+		{
+			name:      "invalid key",
+			secret:    invalidSecret,
+			wantError: "secret is not a valid SSH private key",
+		},
+		{
+			name:      "passphrase protected key",
+			secret:    generatePassphraseProtectedKeyPEM(t),
+			wantError: "private key is passphrase protected, which is not supported",
+		},
 	}
 
 	for _, tt := range tests {
@@ -58,6 +68,11 @@ func TestV2EncryptSSH_DoesNotLogRejectedSecret(t *testing.T) {
 				apiv1.RestEncryptInput{PaasName: testPaasName, Secret: tt.secret})
 
 			assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+			var resp apiv1.RestEncryptResult
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			assert.Equal(t, tt.wantError, resp.Error)
+			assert.NotContains(t, w.Body.String(), tt.secret)
+
 			assert.Contains(t, logs.String(), "failed to parse private key")
 			assert.NotContains(t, logs.String(), tt.secret)
 			// Also guard against partial leakage of PEM key material.
