@@ -17,7 +17,7 @@ func (h *Handler) V2Encrypt(c *gin.Context) {
 	_, logger := logging.SetWebserviceLogger(c.Request)
 	logger.Debug().Msg("entered V2Encrypt")
 	if err := c.BindJSON(&input); err != nil {
-		logger.Error().Err(err).Msg("failed to parse json")
+		logger.Warn().Err(err).Msg("failed to parse json")
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -40,15 +40,15 @@ func (h *Handler) V2Encrypt(c *gin.Context) {
 func (h *Handler) V2EncryptSSH(c *gin.Context) {
 	var input apiv1.RestEncryptInput
 	_, logger := logging.SetWebserviceLogger(c.Request)
-	logger.Debug().Msg("entered V2Encrypt")
+	logger.Debug().Msg("entered V2EncryptSSH")
 	if err := c.BindJSON(&input); err != nil {
-		logger.Error().Err(err).Msg("failed to parse json")
+		logger.Warn().Err(err).Msg("failed to parse json")
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	secret := []byte(input.Secret)
 	if _, err := ssh.ParsePrivateKey(secret); err != nil {
-		logger.Error().Err(err).Msg("failed to parse private key")
+		logger.Warn().Err(err).Msg("failed to parse private key")
 		// StatusUnprocessableEntity means that the data can be parsed, but functionally contains invalid data
 		// which in our case meets with 'you sent proper json, but the secret is not a proper ssh secret
 		c.AbortWithStatus(http.StatusUnprocessableEntity)
@@ -72,9 +72,9 @@ func (h *Handler) V2EncryptSSH(c *gin.Context) {
 func (h *Handler) V2CheckPaas(c *gin.Context) {
 	var input apiv1.RestCheckPaasInput
 	_, logger := logging.SetWebserviceLogger(c.Request)
-	logger.Debug().Msg("entered V1CheckPaas")
+	logger.Debug().Msg("entered V2CheckPaas")
 	if err := c.BindJSON(&input); err != nil {
-		logger.Error().AnErr("error", err).Msg("failed to parse json")
+		logger.Warn().AnErr("error", err).Msg("failed to parse json")
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
