@@ -75,9 +75,11 @@ func TestV2EncryptSSH_DoesNotLogRejectedSecret(t *testing.T) {
 
 			assert.Contains(t, logs.String(), "failed to parse private key")
 			assert.NotContains(t, logs.String(), tt.secret)
+
+			const minLineLength = 20
 			// Also guard against partial leakage of PEM key material.
 			for _, line := range bytes.Split([]byte(tt.secret), []byte("\n")) {
-				if len(line) > 20 {
+				if len(line) > minLineLength {
 					assert.NotContains(t, logs.String(), string(line))
 				}
 			}
