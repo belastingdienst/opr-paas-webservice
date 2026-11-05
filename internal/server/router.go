@@ -24,6 +24,8 @@ import (
 
 func simpleLogger(c *gin.Context) {
 	ctx, _ := logging.SetWebserviceLogger(c.Request)
+	// Store the request logger, so handlers log with the same requestID
+	c.Request = c.Request.WithContext(ctx)
 	_, logger := logging.GetLogComponent(ctx, logging.RouterComponent)
 	logger.Debug().Msg("new request")
 	c.Next()
@@ -31,6 +33,8 @@ func simpleLogger(c *gin.Context) {
 
 func intrusiveLogger(c *gin.Context) {
 	ctx, _ := logging.SetWebserviceLogger(c.Request)
+	// Store the request logger, so handlers log with the same requestID
+	c.Request = c.Request.WithContext(ctx)
 	_, logger := logging.GetLogComponent(ctx, logging.RouterComponent)
 	logger.Debug().Msg("new request")
 	start := time.Now()
