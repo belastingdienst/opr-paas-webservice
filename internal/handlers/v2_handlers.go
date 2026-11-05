@@ -48,7 +48,6 @@ func (h *Handler) V2EncryptSSH(c *gin.Context) {
 	}
 	secret := []byte(input.Secret)
 	if _, err := ssh.ParsePrivateKey(secret); err != nil {
-		logger.Debug().Str("secret", input.Secret).Msg("")
 		logger.Error().Err(err).Msg("failed to parse private key")
 		// StatusUnprocessableEntity means that the data can be parsed, but functionally contains invalid data
 		// which in our case meets with 'you sent proper json, but the secret is not a proper ssh secret
