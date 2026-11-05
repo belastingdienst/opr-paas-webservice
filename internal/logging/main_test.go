@@ -85,3 +85,63 @@ func TestDebugging(t *testing.T) {
 	_, componentDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
 }
+
+// resetStaticLoggingConfig restores the default (no debug) config after a test.
+func resetStaticLoggingConfig(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() { SetStaticLoggingConfig(false, nil) })
+}
+
+func TestSetWebServiceLoggerDebugOnlyWhenEnabled(t *testing.T) {
+	resetStaticLoggingConfig(t)
+	req := &http.Request{Method: "POST", URL: &url.URL{Path: "some/path"}}
+
+	SetStaticLoggingConfig(false, nil)
+	output := &logSink{}
+	log.Logger = log.Output(output)
+	_, logger := SetWebserviceLogger(req)
+	logger.Debug().Msg("hidden debug line")
+	assert.NotContains(t, output.logs, "hidden debug line")
+	for _, line := range output.logs {
+		assert.NotContains(t, line, "hidden debug line")
+	}
+
+	SetStaticLoggingConfig(true, nil)
+	output = &logSink{}
+	log.Logger = log.Output(output)
+	_, logger = SetWebserviceLogger(req)
+	logger.Debug().Msg("visible debug line")
+	require.Len(t, output.logs, 2)
+	assert.Contains(t, output.Index(1), "visible debug line")
+}
+
+func TestGetLogComponentKeepsRequestLogger(t *testing.T) {
+	resetStaticLoggingConfig(t)
+	req := &http.Request{Method: "POST", URL: &url.URL{Path: "some/path"}}
+
+	for _, debugComponent := range []bool{false, true} {
+		SetStaticLoggingConfig(false, Components{TestComponent: debugComponent})
+		output := &logSink{}
+		log.Logger = log.Output(output)
+		ctx, _ := SetWebserviceLogger(req)
+
+		_, logger := GetLogComponent(ctx, TestComponent)
+		logger.Info().Msg("component line")
+		require.Len(t, output.logs, 2)
+		line := output.Index(1)
+		assert.Contains(t, line, `"component":"unittest_component"`)
+		assert.Contains(t, line, `"path":"some/path"`)
+		assert.Contains(t, line, `"requestID"`)
+	}
+}
+
+func TestGetLogComponentWithoutContextLogger(t *testing.T) {
+	resetStaticLoggingConfig(t)
+	output := &logSink{}
+	log.Logger = log.Output(output)
+
+	_, logger := GetLogComponent(context.TODO(), TestComponent)
+	logger.Info().Msg("fallback line")
+	require.Len(t, output.logs, 1, "logs must not be dropped when the context has no logger")
+	assert.Contains(t, output.Index(0), `"component":"unittest_component"`)
+}

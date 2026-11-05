@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	apiv1 "github.com/belastingdienst/opr-paas-webservice/v3/api/v1"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -82,6 +83,44 @@ func TestV2EncryptSSH_DoesNotLogRejectedSecret(t *testing.T) {
 				if len(line) > minLineLength {
 					assert.NotContains(t, logs.String(), string(line))
 				}
+			}
+		})
+	}
+}
+
+func TestV2EncryptSSH_DebugLoggingFollowsComponentConfig(t *testing.T) {
+	t.Cleanup(func() { logging.SetStaticLoggingConfig(false, nil) })
+
+	tests := []struct {
+		name      string
+		debug     bool
+		comps     logging.Components
+		wantDebug bool
+	}{
+		{name: "debug off", wantDebug: false},
+		{
+			name:      "other component enabled",
+			comps:     logging.Components{logging.CheckPaasComponent: true},
+			wantDebug: false,
+		},
+		{name: "encrypt component enabled", comps: logging.Components{logging.EncryptComponent: true}, wantDebug: true},
+		{name: "global debug", debug: true, wantDebug: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logging.SetStaticLoggingConfig(tt.debug, tt.comps)
+			logs := captureLogs(t)
+			h := setupHandler(t)
+			r := gin.New()
+			r.POST(epv2EncryptSSH, h.V2EncryptSSH)
+
+			perform(r, http.MethodPost, epv2EncryptSSH, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: "x"})
+
+			assert.Contains(t, logs.String(), `"component":"encrypt"`)
+			if tt.wantDebug {
+				assert.Contains(t, logs.String(), "entered V2EncryptSSH")
+			} else {
+				assert.NotContains(t, logs.String(), "entered V2EncryptSSH")
 			}
 		})
 	}
