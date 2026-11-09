@@ -15,7 +15,7 @@ import (
 // V2Encrypt encrypts a secret and returns the encrypted value
 func (h *Handler) V2Encrypt(c *gin.Context) {
 	var input apiv1.RestEncryptInput
-	_, logger := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(c.Request.Context(), logging.EncryptComponent)
 	logger.Debug().Msg("entered V2Encrypt")
 	if err := c.BindJSON(&input); err != nil {
 		logger.Warn().Err(err).Msg("failed to parse json")
@@ -50,7 +50,7 @@ func sshKeyErrorMessage(err error) string {
 // V2EncryptSSH verifies an SSH key, and if valid, it encrypts it and returns the encrypted value
 func (h *Handler) V2EncryptSSH(c *gin.Context) {
 	var input apiv1.RestEncryptInput
-	_, logger := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(c.Request.Context(), logging.EncryptComponent)
 	logger.Debug().Msg("entered V2EncryptSSH")
 	if err := c.BindJSON(&input); err != nil {
 		logger.Warn().Err(err).Msg("failed to parse json")
@@ -86,7 +86,7 @@ func (h *Handler) V2EncryptSSH(c *gin.Context) {
 // V2CheckPaas checks whether a Paas can be decrypted using provided private/public keys
 func (h *Handler) V2CheckPaas(c *gin.Context) {
 	var input apiv1.RestCheckPaasInput
-	_, logger := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(c.Request.Context(), logging.CheckPaasComponent)
 	logger.Debug().Msg("entered V2CheckPaas")
 	if err := c.BindJSON(&input); err != nil {
 		logger.Warn().AnErr("error", err).Msg("failed to parse json")

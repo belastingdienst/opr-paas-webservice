@@ -14,7 +14,7 @@ import (
 // V1Encrypt encrypts a secret and returns the encrypted value
 func (h *Handler) V1Encrypt(c *gin.Context) {
 	var input apiv1.RestEncryptInput
-	_, logger := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(c.Request.Context(), logging.EncryptComponent)
 	logger.Debug().Msg("entered V1Encrypt")
 	if err := c.BindJSON(&input); err != nil {
 		logger.Error().Err(err).Msg("failed to parse json")
@@ -44,7 +44,7 @@ func (h *Handler) V1Encrypt(c *gin.Context) {
 // V1CheckPaas checks whether a Paas can be decrypted using provided private/public keys
 func (h *Handler) V1CheckPaas(c *gin.Context) {
 	var input apiv1.RestCheckPaasInput
-	_, logger := logging.SetWebserviceLogger(c.Request)
+	_, logger := logging.GetLogComponent(c.Request.Context(), logging.CheckPaasComponent)
 	logger.Debug().Msg("entered V1CheckPaas")
 	if err := c.BindJSON(&input); err != nil {
 		logger.Error().AnErr("error", err).Msg("failed to parse json")
