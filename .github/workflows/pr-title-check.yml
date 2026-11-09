@@ -3,6 +3,8 @@ name: "Lint PR"
 on:
   pull_request_target:
     types: [opened, edited, reopened, synchronize]
+  # The title was already validated on the PR; this only reports the required check in the merge queue.
+  merge_group:
 
 # IMPORTANT: No checkout actions, scripts, or builds should be added to this workflow. Permissions should always be used
 # with extreme caution. https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
@@ -12,7 +14,7 @@ permissions: {}
 # workflow being trigger a number of times. This limits it
 # to one run per PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +25,8 @@ jobs:
     name: Validate PR Title
     runs-on: ubuntu-latest
     steps:
-      - uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           configuration_path: ".github/pr-title-checker-config.json"
