@@ -51,7 +51,13 @@ func TestV2EncryptSSH_InvalidPrivateKey(t *testing.T) {
 	w := perform(r, http.MethodPost, epv2EncryptSSH, input)
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
-	assert.Len(t, w.Body.Bytes(), 0)
+
+	var resp apiv1.RestEncryptResult
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.False(t, resp.Valid)
+	assert.Equal(t, testPaasName, resp.PaasName)
+	assert.Empty(t, resp.Encrypted)
+	assert.Equal(t, "secret is not a valid SSH private key", resp.Error)
 }
 
 func TestV2EncryptSSH_InvalidJSON(t *testing.T) {
