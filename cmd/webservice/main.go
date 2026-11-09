@@ -22,6 +22,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	cfg := config.NewWSConfig()
+	logging.ConfigureGlobalLogger()
 	logging.SetStaticLoggingConfig(cfg.Debug, cfg.DebugComponents)
 	router := server.NewRouter(&cfg)
 
