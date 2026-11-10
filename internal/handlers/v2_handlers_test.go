@@ -113,7 +113,9 @@ func TestV2CheckPaas_Valid(t *testing.T) {
 		secret    = "secret"
 		encrypted string
 	)
-	encrypted, err := h.CryptMgr.GetOrCreate(testPaasName).Encrypt([]byte(secret))
+	cryptObj, err := h.CryptMgr.GetOrCreate(testPaasName)
+	require.NoError(t, err)
+	encrypted, err = cryptObj.Encrypt([]byte(secret))
 	require.NoError(t, err)
 
 	r := gin.New()
