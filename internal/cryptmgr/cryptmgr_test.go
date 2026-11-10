@@ -35,11 +35,13 @@ func Test_GetOrCreate(t *testing.T) {
 	mgr := NewManager(&cfg)
 
 	// first call should create a new crypt
-	c := mgr.GetOrCreate("paasName")
+	c, err := mgr.GetOrCreate("paasName")
+	require.NoError(t, err)
 	assert.NotNil(t, c)
 
 	// second call should return cached
-	c2 := mgr.GetOrCreate("paasName")
+	c2, err := mgr.GetOrCreate("paasName")
+	require.NoError(t, err)
 	assert.Equal(t, c, c2)
 }
 
@@ -58,11 +60,13 @@ func Test_GetOrCreateConcurrently(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NotNil(t, mgr.GetOrCreate(fmt.Sprintf("paas%d", i%paasNames)))
+			c, err := mgr.GetOrCreate(fmt.Sprintf("paas%d", i%paasNames))
+			assert.NoError(t, err)
+			assert.NotNil(t, c)
 		}()
 	}
 	wg.Wait()
-	assert.Same(t, mgr.GetOrCreate("paas0"), mgr.GetOrCreate("paas0"))
+	assert.Same(t, getOrCreate(t, mgr, "paas0"), getOrCreate(t, mgr, "paas0"))
 }
 
 // rotatePublicKey lays out dir the way the kubelet updates a mounted
@@ -108,11 +112,19 @@ func Test_ARotatedPublicKeyIsUsed(t *testing.T) {
 	cfg.PublicKeyPath = filepath.Join(publicDir, "publicKey")
 	cfg.PrivateKeyPath = priv.Name()
 	mgr := NewManager(&cfg)
-	require.True(t, encryptsFor(t, mgr.GetOrCreate("paasName"), privateKey))
+	require.True(t, encryptsFor(t, getOrCreate(t, mgr, "paasName"), privateKey))
 
 	for version := 2; version <= lastVersion; version++ {
 		privateKey = rotatePublicKey(t, publicDir, version)
-		require.Eventually(t, func() bool { return encryptsFor(t, mgr.GetOrCreate("paasName"), privateKey) },
+		require.Eventually(t, func() bool { return encryptsFor(t, getOrCreate(t, mgr, "paasName"), privateKey) },
 			waitForRotation, pollInterval, "rotation %d is used", version-1)
 	}
+}
+
+// getOrCreate returns the crypt for paasName and fails the test on an error.
+func getOrCreate(t *testing.T, mgr *Manager, paasName string) *crypt.Crypt {
+	t.Helper()
+	c, err := mgr.GetOrCreate(paasName)
+	require.NoError(t, err)
+	return c
 }

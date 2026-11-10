@@ -10,11 +10,20 @@ import (
 	"net/http"
 
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/cryptmgr"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/version"
 	"github.com/gin-gonic/gin"
 )
 
 // Handler struct for handlers
+// Messages returned to clients when the keys cannot be used. The details stay
+// in the log: the endpoints are not authenticated.
+const (
+	errKeysUnavailable  = "the service cannot load its keys"
+	errEncryptionFailed = "encryption failed"
+	errNotReady         = "the configured keys cannot be loaded or cannot encrypt"
+)
+
 type Handler struct {
 	CryptMgr *cryptmgr.Manager
 }
@@ -36,5 +45,11 @@ func (h *Handler) Healthz(c *gin.Context) {
 
 // Readyz is a handler for the Readinesscheck
 func (h *Handler) Readyz(c *gin.Context) {
+	if err := h.CryptMgr.Ready(); err != nil {
+		_, logger := logging.GetLogComponent(c.Request.Context(), logging.RouterComponent)
+		logger.Error().Err(err).Msg("not ready")
+		c.JSON(http.StatusServiceUnavailable, gin.H{"message": "not ready", "error": errNotReady})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "ready"})
 }

@@ -32,7 +32,8 @@ func TestCheckPaas(t *testing.T) {
 	cfg.PrivateKeyPath = priv.Name()
 
 	mgr := cryptmgr.NewManager(&cfg)
-	rsa := mgr.GetOrCreate(paasName)
+	rsa, err := mgr.GetOrCreate(paasName)
+	require.NoError(t, err)
 
 	encrypted, err := rsa.Encrypt([]byte("My test string"))
 	require.NoError(t, err)
