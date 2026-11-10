@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	apiv1 "github.com/belastingdienst/opr-paas-webservice/v3/api/v1"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
@@ -23,7 +22,7 @@ func (h *Handler) V2Encrypt(c *gin.Context) {
 		return
 	}
 	secret := []byte(input.Secret)
-	encrypted, err := h.CryptMgr.GetOrCreate(input.PaasName).Encrypt(secret)
+	encrypted, err := h.encrypt(input.PaasName, secret)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to encrypt")
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -69,7 +68,7 @@ func (h *Handler) V2EncryptSSH(c *gin.Context) {
 		})
 		return
 	}
-	encrypted, err := h.CryptMgr.GetOrCreate(input.PaasName).Encrypt(secret)
+	encrypted, err := h.encrypt(input.PaasName, secret)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to encrypt")
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -93,20 +92,30 @@ func (h *Handler) V2CheckPaas(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	rsa := h.CryptMgr.GetOrCreate(input.Paas.Name)
-	err := internal.CheckPaas(rsa, &input.Paas)
+	cryptObj, err := h.checkCrypt(input.Paas.Name)
 	if err != nil {
+		logger.Error().AnErr("error", err).Msg("cannot check paas")
+		status, message := checkUnavailable(err)
+		c.AbortWithStatusJSON(status, apiv1.RestCheckPaasResult{PaasName: input.Paas.Name, Error: message})
+		return
+	}
+	// Every error CheckPaas returns is a secret that does not decrypt.
+	if err = internal.CheckPaas(cryptObj, &input.Paas); err != nil {
 		logger.Error().AnErr("error", err).Msg("paas not ok")
-		if strings.Contains(err.Error(), "unable to decrypt data") ||
-			strings.Contains(err.Error(), "base64") {
-			c.AbortWithStatus(http.StatusUnprocessableEntity)
-			return
-		}
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.AbortWithStatus(http.StatusUnprocessableEntity)
 		return
 	}
 	logger.Debug().Msg("paas ok")
 	c.IndentedJSON(http.StatusOK, apiv1.RestCheckPaasResult{
 		PaasName: input.Paas.Name, Decrypted: true,
 	})
+}
+
+// encrypt encrypts secret for paasName with the configured keys.
+func (h *Handler) encrypt(paasName string, secret []byte) (string, error) {
+	cryptObj, err := h.CryptMgr.GetOrCreate(paasName)
+	if err != nil {
+		return "", err
+	}
+	return cryptObj.Encrypt(secret)
 }
