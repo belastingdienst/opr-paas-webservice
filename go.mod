@@ -6,7 +6,7 @@ require (
 	github.com/belastingdienst/opr-paas-cli/v2 v2.0.6
 	github.com/belastingdienst/opr-paas/v5 v5.13.0
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/gin-contrib/cors v1.7.10
+	github.com/gin-contrib/cors v1.7.11
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.25.0
@@ -74,7 +74,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/arch v0.29.0 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
