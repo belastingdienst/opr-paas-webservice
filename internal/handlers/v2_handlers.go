@@ -22,10 +22,12 @@ func (h *Handler) V2Encrypt(c *gin.Context) {
 		return
 	}
 	secret := []byte(input.Secret)
-	encrypted, err := h.encrypt(input.PaasName, secret)
+	encrypted, message, err := h.encrypt(input.PaasName, secret)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to encrypt")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, apiv1.RestEncryptResult{
+			PaasName: input.PaasName, Valid: false, Error: message,
+		})
 		return
 	}
 	logger.Debug().Msg("secret encrypted properly")
@@ -68,10 +70,12 @@ func (h *Handler) V2EncryptSSH(c *gin.Context) {
 		})
 		return
 	}
-	encrypted, err := h.encrypt(input.PaasName, secret)
+	encrypted, message, err := h.encrypt(input.PaasName, secret)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to encrypt")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, apiv1.RestEncryptResult{
+			PaasName: input.PaasName, Valid: false, Error: message,
+		})
 		return
 	}
 	logger.Debug().Msg("secret encrypted properly")
@@ -111,11 +115,17 @@ func (h *Handler) V2CheckPaas(c *gin.Context) {
 	})
 }
 
-// encrypt encrypts secret for paasName with the configured keys.
-func (h *Handler) encrypt(paasName string, secret []byte) (string, error) {
+// encrypt encrypts secret for paasName with the configured keys. On failure
+// it also returns the fixed, client-facing message for the error; the error
+// itself, which may contain file paths, is only for the log.
+func (h *Handler) encrypt(paasName string, secret []byte) (encrypted, message string, err error) {
 	cryptObj, err := h.CryptMgr.GetOrCreate(paasName)
 	if err != nil {
-		return "", err
+		return "", errKeysUnavailable, err
 	}
-	return cryptObj.Encrypt(secret)
+	encrypted, err = cryptObj.Encrypt(secret)
+	if err != nil {
+		return "", errEncryptionFailed, err
+	}
+	return encrypted, "", nil
 }

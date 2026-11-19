@@ -153,11 +153,11 @@ func TestUnloadableKeysAnswer500(t *testing.T) {
 		w := perform(r, http.MethodPost, path, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: key})
 		assert.Equal(t, http.StatusInternalServerError, w.Code, path)
 		assert.NotContains(t, w.Body.String(), dir, path)
+		var resp apiv1.RestEncryptResult
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), path)
+		assert.False(t, resp.Valid, path)
+		assert.Equal(t, errKeysUnavailable, resp.Error, path)
 	}
-	w := perform(r, http.MethodPost, epv1Encrypt, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: key})
-	var resp apiv1.RestEncryptResult
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, errKeysUnavailable, resp.Error)
 
 	for _, path := range []string{epv1check, "/v2/checkpaas"} {
 		w := perform(r, http.MethodPost, path, paasWithSecret("anything"))
@@ -167,16 +167,20 @@ func TestUnloadableKeysAnswer500(t *testing.T) {
 }
 
 // During a key rotation the keys directory holds two keys and there is no
-// public key: encryption fails, and v1 says so instead of answering an empty 200.
-func TestV1EncryptFailureIsNotAnEmptySuccess(t *testing.T) {
+// public key: encryption fails, and every encrypt endpoint says so in its JSON
+// (v1 used to answer an empty 200, v2 an empty 500).
+func TestEncryptFailureIsExplained(t *testing.T) {
 	r := router(handlerFor(twoPrivateKeys(t), ""))
+	key := sshKey(t)
 
-	w := perform(r, http.MethodPost, epv1Encrypt, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: sshKey(t)})
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	var resp apiv1.RestEncryptResult
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.False(t, resp.Valid)
-	assert.Equal(t, errEncryptionFailed, resp.Error)
+	for _, path := range []string{epv1Encrypt, "/v2/encrypt", "/v2/encryptSSH"} {
+		w := perform(r, http.MethodPost, path, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: key})
+		assert.Equal(t, http.StatusInternalServerError, w.Code, path)
+		var resp apiv1.RestEncryptResult
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), path)
+		assert.False(t, resp.Valid, path)
+		assert.Equal(t, errEncryptionFailed, resp.Error, path)
+	}
 }
 
 // A secret that does not decrypt is 422, whatever the decryption error says:

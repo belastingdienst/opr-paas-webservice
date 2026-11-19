@@ -22,7 +22,7 @@ The service reads its keys from files: the public key from `PAAS_PUBLIC_KEY_PATH
 
 Responses when the keys cannot be used:
 
-* The encrypt endpoints answer `500` when the keys cannot be loaded or encryption fails; `/v1/encrypt` returns its usual JSON with `valid: false` and an `error` message.
+* The encrypt endpoints answer `500` when the keys cannot be loaded or encryption fails, with their usual JSON: `valid: false` and an `error` message.
 * The check endpoints answer `422` for a secret that does not decrypt, `503` in encrypt-only mode, and `500` when the keys cannot be loaded.
 * `/readyz` answers `503` while the configured keys cannot be loaded, and in encrypt-only mode also while they cannot encrypt. With private keys, keys that can decrypt but not encrypt (two private keys and no public key, as during a rotation) keep the service ready: the check endpoints still work and only the encrypt endpoints answer `500`. `/healthz` only reports that the process runs.
 
