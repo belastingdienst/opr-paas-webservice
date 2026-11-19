@@ -19,6 +19,7 @@ import (
 const (
 	publicEnv           = "PAAS_PUBLIC_KEY_PATH"
 	privateKeyEnv       = "PAAS_PRIVATE_KEYS_PATH"
+	encryptOnlyEnv      = "PAAS_ENCRYPT_ONLY"
 	defaultPublicPath   = ""
 	defaultPrivatePath  = "/secrets/paas/privateKeys"
 	endpointEnv         = "PAAS_ENDPOINT"
@@ -34,7 +35,10 @@ const (
 type WsConfig struct {
 	PublicKeyPath string
 	// comma separated list of privateKeyPaths
-	PrivateKeyPath  string
+	PrivateKeyPath string
+	// EncryptOnly runs the service without private keys: it encrypts with the
+	// public key, ignores PrivateKeyPath, and disables the check endpoints.
+	EncryptOnly     bool
 	Endpoint        string
 	AllowedOrigins  []string
 	Debug           bool
@@ -91,6 +95,8 @@ func NewWSConfig() (config WsConfig) {
 		config.PrivateKeyPath = defaultPrivatePath
 	}
 
+	config.EncryptOnly = parseBool(encryptOnlyEnv, os.Getenv(encryptOnlyEnv))
+
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
 	value := os.Getenv(allowedOriginsEnv)
 	if strings.TrimSpace(value) != "" {
@@ -100,6 +106,19 @@ func NewWSConfig() (config WsConfig) {
 	config.DebugComponents = logging.NewComponentsFromString(os.Getenv(debugComponentsEnv))
 
 	return config
+}
+
+// parseBool parses the boolean value of the environment variable name; empty
+// is false. An invalid value panics, like the other invalid configuration.
+func parseBool(name, value string) bool {
+	if strings.TrimSpace(value) == "" {
+		return false
+	}
+	b, err := strconv.ParseBool(strings.TrimSpace(value))
+	if err != nil {
+		panic(fmt.Errorf("invalid value %q for %s: use true or false", value, name))
+	}
+	return b
 }
 
 // GetOriginsAsSlice turns the given value of and env var into a slice of strings.

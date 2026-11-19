@@ -6,9 +6,8 @@ import sys
 def stdin_to_json():
     d = {"paas": "cet-bhr"}
 
-    secret = sys.stdin.read()
-    secret.replace("\n","\\n")
-    d["secret"] = secret
+    # json.dumps escapes the newlines of the key itself.
+    d["secret"] = sys.stdin.read()
 
     print(json.dumps(d))
 

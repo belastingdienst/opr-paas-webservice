@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
-	"strings"
 
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	apiv1 "github.com/belastingdienst/opr-paas-webservice/v3/api/v1"
+	"github.com/belastingdienst/opr-paas-webservice/v3/internal/cryptmgr"
 	"github.com/belastingdienst/opr-paas-webservice/v3/internal/logging"
 	internal "github.com/belastingdienst/opr-paas-webservice/v3/internal/services"
 	"github.com/gin-gonic/gin"
@@ -29,9 +31,20 @@ func (h *Handler) V1Encrypt(c *gin.Context) {
 		})
 		return
 	}
-	encrypted, err := h.CryptMgr.GetOrCreate(input.PaasName).Encrypt(secret)
+	cryptObj, err := h.CryptMgr.GetOrCreate(input.PaasName)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to load the keys")
+		c.IndentedJSON(http.StatusInternalServerError, apiv1.RestEncryptResult{
+			PaasName: input.PaasName, Valid: false, Error: errKeysUnavailable,
+		})
+		return
+	}
+	encrypted, err := cryptObj.Encrypt(secret)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to encrypt")
+		c.IndentedJSON(http.StatusInternalServerError, apiv1.RestEncryptResult{
+			PaasName: input.PaasName, Valid: false, Error: errEncryptionFailed,
+		})
 		return
 	}
 	c.IndentedJSON(http.StatusOK, apiv1.RestEncryptResult{
@@ -51,22 +64,41 @@ func (h *Handler) V1CheckPaas(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, apiv1.RestCheckPaasResult{Error: err.Error()})
 		return
 	}
-	rsa := h.CryptMgr.GetOrCreate(input.Paas.Name)
-	err := internal.CheckPaas(rsa, &input.Paas)
+	cryptObj, err := h.checkCrypt(input.Paas.Name)
 	if err != nil {
+		logger.Error().AnErr("error", err).Msg("cannot check paas")
+		status, message := checkUnavailable(err)
+		c.IndentedJSON(status, apiv1.RestCheckPaasResult{PaasName: input.Paas.Name, Error: message})
+		return
+	}
+	// Every error CheckPaas returns is a secret that does not decrypt.
+	if err = internal.CheckPaas(cryptObj, &input.Paas); err != nil {
 		logger.Error().AnErr("error", err).Msg("paas not ok")
-		if strings.Contains(err.Error(), "unable to decrypt data") ||
-			strings.Contains(err.Error(), "base64") {
-			c.IndentedJSON(http.StatusUnprocessableEntity, apiv1.RestCheckPaasResult{
-				PaasName: input.Paas.Name, Decrypted: false, Error: err.Error(),
-			})
-			return
-		}
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.IndentedJSON(http.StatusUnprocessableEntity, apiv1.RestCheckPaasResult{
+			PaasName: input.Paas.Name, Decrypted: false, Error: err.Error(),
+		})
 		return
 	}
 	logger.Debug().Msg("paas ok")
 	c.IndentedJSON(http.StatusOK, apiv1.RestCheckPaasResult{
 		PaasName: input.Paas.Name, Decrypted: true,
 	})
+}
+
+// checkCrypt returns the crypt for checking a Paas: cryptmgr.ErrNoPrivateKeys
+// when the service runs encrypt-only, or the error loading the keys.
+func (h *Handler) checkCrypt(paasName string) (*crypt.Crypt, error) {
+	if h.CryptMgr.EncryptOnly() {
+		return nil, cryptmgr.ErrNoPrivateKeys
+	}
+	return h.CryptMgr.GetOrCreate(paasName)
+}
+
+// checkUnavailable is the status and message for a check that cannot run:
+// 503 when the service runs encrypt-only, 500 when its keys cannot be loaded.
+func checkUnavailable(err error) (int, string) {
+	if errors.Is(err, cryptmgr.ErrNoPrivateKeys) {
+		return http.StatusServiceUnavailable, cryptmgr.ErrNoPrivateKeys.Error()
+	}
+	return http.StatusInternalServerError, errKeysUnavailable
 }

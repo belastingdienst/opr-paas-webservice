@@ -129,3 +129,17 @@ func TestGetOriginsAsSlice(t *testing.T) {
 		assert.Equal(t, "https://example1.com https://example2.com", result[0])
 	})
 }
+
+func TestEncryptOnly(t *testing.T) {
+	for value, want := range map[string]bool{
+		"": false, "false": false, "0": false,
+		"true": true, "1": true, "TRUE": true, " true ": true,
+	} {
+		t.Setenv(encryptOnlyEnv, value)
+		assert.Equal(t, want, NewWSConfig().EncryptOnly, "%q", value)
+	}
+
+	t.Setenv(encryptOnlyEnv, "yes")
+	assert.PanicsWithError(t, `invalid value "yes" for PAAS_ENCRYPT_ONLY: use true or false`,
+		func() { NewWSConfig() })
+}
