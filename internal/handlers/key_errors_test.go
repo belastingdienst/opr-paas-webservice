@@ -38,6 +38,13 @@ func handlerFor(privateKeyPath, publicKeyPath string) *Handler {
 	return NewHandler(cryptmgr.NewManager(&cfg))
 }
 
+// encryptOnlyHandlerFor returns a handler that runs encrypt-only
+// (PAAS_ENCRYPT_ONLY) with the given key paths.
+func encryptOnlyHandlerFor(privateKeyPath, publicKeyPath string) *Handler {
+	cfg := config.WsConfig{PrivateKeyPath: privateKeyPath, PublicKeyPath: publicKeyPath, EncryptOnly: true}
+	return NewHandler(cryptmgr.NewManager(&cfg))
+}
+
 // router routes every endpoint without gin.Recovery, so a panic fails the test.
 func router(h *Handler) *gin.Engine {
 	r := gin.New()
@@ -63,12 +70,12 @@ func paasWithSecret(secret string) apiv1.RestCheckPaasInput {
 	return apiv1.RestCheckPaasInput{Paas: paas}
 }
 
-// Without private keys (the opr-paas manifest mounts only the public key) the
-// service encrypts, and only the private key outside the service decrypts.
+// Encrypt-only (the opr-paas manifest mounts only the public key) the service
+// encrypts, and only the private key outside the service decrypts.
 func TestEncryptOnlyEncrypts(t *testing.T) {
 	dir := t.TempDir()
 	priv, pub := keyFiles(t, dir, "key")
-	r := router(handlerFor(filepath.Join(dir, "missing"), pub))
+	r := router(encryptOnlyHandlerFor(filepath.Join(dir, "missing"), pub))
 	key := sshKey(t)
 
 	for _, path := range []string{epv1Encrypt, "/v2/encrypt", "/v2/encryptSSH"} {
@@ -86,18 +93,51 @@ func TestEncryptOnlyEncrypts(t *testing.T) {
 	}
 }
 
+// Encrypt-only disables the check, also when private keys are mounted: they
+// are not used.
 func TestEncryptOnlyDisablesTheCheck(t *testing.T) {
+	dir := t.TempDir()
+	priv, pub := keyFiles(t, dir, "key")
+	encrypted, err := crypt.NewCryptFromFiles(nil, pub, testPaasName)
+	require.NoError(t, err)
+	secret, err := encrypted.Encrypt([]byte("secret"))
+	require.NoError(t, err)
+
+	for name, privateKeyPath := range map[string]string{
+		"no private keys":      filepath.Join(dir, "missing"),
+		"private keys mounted": priv,
+	} {
+		r := router(encryptOnlyHandlerFor(privateKeyPath, pub))
+		for _, path := range []string{epv1check, "/v2/checkpaas"} {
+			w := perform(r, http.MethodPost, path, paasWithSecret(secret))
+			assert.Equal(t, http.StatusServiceUnavailable, w.Code, "%s %s", name, path)
+			var resp apiv1.RestCheckPaasResult
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "%s %s", name, path)
+			assert.Equal(t, cryptmgr.ErrNoPrivateKeys.Error(), resp.Error, "%s %s", name, path)
+		}
+	}
+}
+
+// Without PAAS_ENCRYPT_ONLY, a missing private key path is an error, not a
+// silent switch to encrypt-only: a typo in PAAS_PRIVATE_KEYS_PATH must not
+// disable the checks unnoticed.
+func TestMissingPrivateKeysWithoutEncryptOnlyIsAnError(t *testing.T) {
 	dir := t.TempDir()
 	_, pub := keyFiles(t, dir, "key")
 	r := router(handlerFor(filepath.Join(dir, "missing"), pub))
 
+	for _, path := range []string{epv1Encrypt, "/v2/encrypt", "/v2/encryptSSH"} {
+		w := perform(r, http.MethodPost, path, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: sshKey(t)})
+		assert.Equal(t, http.StatusInternalServerError, w.Code, path)
+		assert.NotContains(t, w.Body.String(), dir, path)
+	}
 	for _, path := range []string{epv1check, "/v2/checkpaas"} {
 		w := perform(r, http.MethodPost, path, paasWithSecret("anything"))
-		assert.Equal(t, http.StatusServiceUnavailable, w.Code, path)
-		var resp apiv1.RestCheckPaasResult
-		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), path)
-		assert.Equal(t, cryptmgr.ErrNoPrivateKeys.Error(), resp.Error, path)
+		assert.Equal(t, http.StatusInternalServerError, w.Code, path)
+		assert.NotContains(t, w.Body.String(), dir, path)
 	}
+	w := perform(r, http.MethodGet, "/readyz", nil)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 // Keys that cannot be loaded give 500 on every endpoint, with a fixed message:
@@ -184,19 +224,27 @@ func TestReadyzReflectsTheKeys(t *testing.T) {
 	require.NoError(t, os.WriteFile(broken, []byte("not a key"), keyFileMode))
 	rotating := twoPrivateKeys(t)
 
+	missing := filepath.Join(dir, "missing")
 	for name, tc := range map[string]struct {
-		priv, pub string
-		status    int
+		priv, pub   string
+		encryptOnly bool
+		status      int
 	}{
-		"private and public key": {priv, pub, http.StatusOK},
-		"encrypt-only":           {filepath.Join(dir, "missing"), pub, http.StatusOK},
-		"unloadable private key": {broken, "", http.StatusServiceUnavailable},
-		"no key at all":          {filepath.Join(dir, "missing"), "", http.StatusServiceUnavailable},
-		"unloadable public key":  {filepath.Join(dir, "missing"), broken, http.StatusServiceUnavailable},
+		"private and public key": {priv, pub, false, http.StatusOK},
+		"unloadable private key": {broken, "", false, http.StatusServiceUnavailable},
+		"missing private keys":   {missing, pub, false, http.StatusServiceUnavailable},
 		// The checks still work during a rotation, so the service stays ready.
-		"two private keys, no public key": {rotating, "", http.StatusOK},
+		"two private keys, no public key": {rotating, "", false, http.StatusOK},
+
+		"encrypt-only":                        {missing, pub, true, http.StatusOK},
+		"encrypt-only, no public key":         {missing, "", true, http.StatusServiceUnavailable},
+		"encrypt-only, unloadable public key": {missing, broken, true, http.StatusServiceUnavailable},
 	} {
-		w := perform(router(handlerFor(tc.priv, tc.pub)), http.MethodGet, "/readyz", nil)
+		h := handlerFor(tc.priv, tc.pub)
+		if tc.encryptOnly {
+			h = encryptOnlyHandlerFor(tc.priv, tc.pub)
+		}
+		w := perform(router(h), http.MethodGet, "/readyz", nil)
 		assert.Equal(t, tc.status, w.Code, name)
 	}
 }

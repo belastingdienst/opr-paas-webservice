@@ -17,8 +17,8 @@ This service is designed for secure key rotation and migration processes, ensuri
 
 The service reads its keys from files: the public key from `PAAS_PUBLIC_KEY_PATH`, and the private keys from `PAAS_PRIVATE_KEYS_PATH` (a file or a directory of key files, default `/secrets/paas/privateKeys`). It runs in one of two ways:
 
-* **Encrypt-only (recommended for a web-facing service).** Mount only the public key. When the private key path does not exist, the service encrypts with the public key and the check endpoints (`/v1/checkpaas`, `/v2/checkpaas`) answer `503 Service Unavailable`. No key that can decrypt a Paas secret is held by the web-facing pod.
-* **With private keys.** Mount the private keys too. The check endpoints then decrypt every secret of a Paas to verify it. The public key may be omitted when there is one private key, or one named `current`: its public key is then used to encrypt.
+* **Encrypt-only (recommended for a web-facing service).** Set `PAAS_ENCRYPT_ONLY=true` and mount only the public key. The service encrypts with the public key and the check endpoints (`/v1/checkpaas`, `/v2/checkpaas`) answer `503 Service Unavailable`. No key that can decrypt a Paas secret is held by the web-facing pod. Private keys at `PAAS_PRIVATE_KEYS_PATH` are not used in this mode; the service logs a warning when they are mounted anyway.
+* **With private keys** (the default). Mount the private keys too. When the private key path does not exist, requests fail and `/readyz` answers `503`: a missing path does not switch to encrypt-only by itself, so a typo in `PAAS_PRIVATE_KEYS_PATH` cannot disable the checks unnoticed. The check endpoints then decrypt every secret of a Paas to verify it. The public key may be omitted when there is one private key, or one named `current`: its public key is then used to encrypt.
 
 Responses when the keys cannot be used:
 
