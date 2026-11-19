@@ -20,7 +20,7 @@ import (
 const (
 	errKeysUnavailable  = "the service cannot load its keys"
 	errEncryptionFailed = "encryption failed"
-	errNotReady         = "the configured keys cannot be loaded or cannot encrypt"
+	errNotReady         = "the configured keys cannot be loaded, or cannot encrypt in encrypt-only mode"
 )
 
 // Handler struct for handlers

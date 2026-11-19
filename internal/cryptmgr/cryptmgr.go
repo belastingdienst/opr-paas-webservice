@@ -122,13 +122,22 @@ func (m *Manager) GetOrCreate(paasName string) (*crypt.Crypt, error) {
 	return c, nil
 }
 
-// Ready returns an error when the configured keys, read from disk now rather
-// than from the cache, cannot encrypt: they cannot be loaded, or no public key
-// can be found for encryption.
+// Ready returns an error when the service cannot do its job with the keys on
+// disk now (not the cache): the keys cannot be loaded, or, when it runs
+// encrypt-only, they cannot encrypt.
+//
+// With private keys, a crypt that cannot encrypt still makes the service
+// ready. During a key rotation the keys directory may hold two private keys
+// and no public key: the check endpoints still work then, and only the encrypt
+// endpoints answer 500. Every replica reads the same keys, so failing
+// readiness would take the whole service out of traffic.
 func (m *Manager) Ready() error {
 	c, err := m.build(readinessPaasName)
 	if err != nil {
 		return err
+	}
+	if !m.EncryptOnly() {
+		return nil
 	}
 	if _, err = c.Encrypt([]byte(readinessPaasName)); err != nil {
 		return fmt.Errorf("unable to encrypt: %w", err)

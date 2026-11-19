@@ -129,13 +129,7 @@ func TestUnloadableKeysAnswer500(t *testing.T) {
 // During a key rotation the keys directory holds two keys and there is no
 // public key: encryption fails, and v1 says so instead of answering an empty 200.
 func TestV1EncryptFailureIsNotAnEmptySuccess(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "privateKeys")
-	require.NoError(t, os.MkdirAll(dir, keyDirMode))
-	keyFiles(t, dir, "old")
-	keyFiles(t, dir, "new")
-	require.NoError(t, os.Remove(filepath.Join(dir, "old.pub")))
-	require.NoError(t, os.Remove(filepath.Join(dir, "new.pub")))
-	r := router(handlerFor(dir, ""))
+	r := router(handlerFor(twoPrivateKeys(t), ""))
 
 	w := perform(r, http.MethodPost, epv1Encrypt, apiv1.RestEncryptInput{PaasName: testPaasName, Secret: sshKey(t)})
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -170,11 +164,25 @@ func TestASecretThatDoesNotDecryptIs422(t *testing.T) {
 	}
 }
 
+// twoPrivateKeys lays out a keys directory as during a key rotation: two
+// private keys and no public key, so the keys decrypt but cannot encrypt.
+func twoPrivateKeys(t *testing.T) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), "privateKeys")
+	require.NoError(t, os.MkdirAll(dir, keyDirMode))
+	keyFiles(t, dir, "old")
+	keyFiles(t, dir, "new")
+	require.NoError(t, os.Remove(filepath.Join(dir, "old.pub")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "new.pub")))
+	return dir
+}
+
 func TestReadyzReflectsTheKeys(t *testing.T) {
 	dir := t.TempDir()
 	priv, pub := keyFiles(t, dir, "key")
 	broken := filepath.Join(dir, "broken")
 	require.NoError(t, os.WriteFile(broken, []byte("not a key"), keyFileMode))
+	rotating := twoPrivateKeys(t)
 
 	for name, tc := range map[string]struct {
 		priv, pub string
@@ -185,6 +193,8 @@ func TestReadyzReflectsTheKeys(t *testing.T) {
 		"unloadable private key": {broken, "", http.StatusServiceUnavailable},
 		"no key at all":          {filepath.Join(dir, "missing"), "", http.StatusServiceUnavailable},
 		"unloadable public key":  {filepath.Join(dir, "missing"), broken, http.StatusServiceUnavailable},
+		// The checks still work during a rotation, so the service stays ready.
+		"two private keys, no public key": {rotating, "", http.StatusOK},
 	} {
 		w := perform(router(handlerFor(tc.priv, tc.pub)), http.MethodGet, "/readyz", nil)
 		assert.Equal(t, tc.status, w.Code, name)
