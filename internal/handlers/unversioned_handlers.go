@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler struct for handlers
 // Messages returned to clients when the keys cannot be used. The details stay
 // in the log: the endpoints are not authenticated.
 const (
@@ -24,6 +23,7 @@ const (
 	errNotReady         = "the configured keys cannot be loaded or cannot encrypt"
 )
 
+// Handler struct for handlers
 type Handler struct {
 	CryptMgr *cryptmgr.Manager
 }

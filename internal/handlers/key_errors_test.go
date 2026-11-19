@@ -18,6 +18,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	sshKeyBits  = 2048
+	keyFileMode = 0o600
+	keyDirMode  = 0o700
+)
+
 // keyFiles generates a key pair in dir and returns the private and public key paths.
 func keyFiles(t *testing.T, dir, name string) (string, string) {
 	t.Helper()
@@ -46,7 +52,7 @@ func router(h *Handler) *gin.Engine {
 
 func sshKey(t *testing.T) string {
 	t.Helper()
-	key, err := generateRSAPrivateKeyPEM(2048)
+	key, err := generateRSAPrivateKeyPEM(sshKeyBits)
 	require.NoError(t, err)
 	return key
 }
@@ -99,7 +105,7 @@ func TestEncryptOnlyDisablesTheCheck(t *testing.T) {
 func TestUnloadableKeysAnswer500(t *testing.T) {
 	dir := t.TempDir()
 	priv := filepath.Join(dir, "broken")
-	require.NoError(t, os.WriteFile(priv, []byte("not a key"), 0o600))
+	require.NoError(t, os.WriteFile(priv, []byte("not a key"), keyFileMode))
 	r := router(handlerFor(priv, ""))
 	key := sshKey(t)
 
@@ -124,7 +130,7 @@ func TestUnloadableKeysAnswer500(t *testing.T) {
 // public key: encryption fails, and v1 says so instead of answering an empty 200.
 func TestV1EncryptFailureIsNotAnEmptySuccess(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "privateKeys")
-	require.NoError(t, os.MkdirAll(dir, 0o700))
+	require.NoError(t, os.MkdirAll(dir, keyDirMode))
 	keyFiles(t, dir, "old")
 	keyFiles(t, dir, "new")
 	require.NoError(t, os.Remove(filepath.Join(dir, "old.pub")))
@@ -168,7 +174,7 @@ func TestReadyzReflectsTheKeys(t *testing.T) {
 	dir := t.TempDir()
 	priv, pub := keyFiles(t, dir, "key")
 	broken := filepath.Join(dir, "broken")
-	require.NoError(t, os.WriteFile(broken, []byte("not a key"), 0o600))
+	require.NoError(t, os.WriteFile(broken, []byte("not a key"), keyFileMode))
 
 	for name, tc := range map[string]struct {
 		priv, pub string
