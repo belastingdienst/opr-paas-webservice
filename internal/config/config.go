@@ -20,6 +20,8 @@ const (
 	publicEnv           = "PAAS_PUBLIC_KEY_PATH"
 	privateKeyEnv       = "PAAS_PRIVATE_KEYS_PATH"
 	encryptOnlyEnv      = "PAAS_ENCRYPT_ONLY"
+	tlsCertEnv          = "PAAS_TLS_CERT_FILE"
+	tlsKeyEnv           = "PAAS_TLS_KEY_FILE"
 	defaultPublicPath   = ""
 	defaultPrivatePath  = "/secrets/paas/privateKeys"
 	endpointEnv         = "PAAS_ENDPOINT"
@@ -38,11 +40,20 @@ type WsConfig struct {
 	PrivateKeyPath string
 	// EncryptOnly runs the service without private keys: it encrypts with the
 	// public key, ignores PrivateKeyPath, and disables the check endpoints.
-	EncryptOnly     bool
+	EncryptOnly bool
+	// TLSCertFile and TLSKeyFile hold the serving certificate and its key. When
+	// both are set the service serves TLS, otherwise plain HTTP.
+	TLSCertFile     string
+	TLSKeyFile      string
 	Endpoint        string
 	AllowedOrigins  []string
 	Debug           bool
 	DebugComponents logging.Components
+}
+
+// TLSEnabled reports whether the service serves TLS itself.
+func (c WsConfig) TLSEnabled() bool {
+	return c.TLSCertFile != ""
 }
 
 func formatEndpoint(endpoint string) string {
@@ -96,6 +107,12 @@ func NewWSConfig() (config WsConfig) {
 	}
 
 	config.EncryptOnly = parseBool(encryptOnlyEnv, os.Getenv(encryptOnlyEnv))
+
+	config.TLSCertFile = os.Getenv(tlsCertEnv)
+	config.TLSKeyFile = os.Getenv(tlsKeyEnv)
+	if (config.TLSCertFile == "") != (config.TLSKeyFile == "") {
+		panic(fmt.Errorf("set both %s and %s to serve TLS, or neither", tlsCertEnv, tlsKeyEnv))
+	}
 
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
 	value := os.Getenv(allowedOriginsEnv)
