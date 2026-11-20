@@ -143,3 +143,18 @@ func TestEncryptOnly(t *testing.T) {
 	assert.PanicsWithError(t, `invalid value "yes" for PAAS_ENCRYPT_ONLY: use true or false`,
 		func() { NewWSConfig() })
 }
+
+func TestTLS(t *testing.T) {
+	assert.False(t, NewWSConfig().TLSEnabled())
+
+	t.Setenv(tlsCertEnv, "/tls/tls.crt")
+	t.Setenv(tlsKeyEnv, "/tls/tls.key")
+	cfg := NewWSConfig()
+	assert.True(t, cfg.TLSEnabled())
+	assert.Equal(t, "/tls/tls.crt", cfg.TLSCertFile)
+	assert.Equal(t, "/tls/tls.key", cfg.TLSKeyFile)
+
+	t.Setenv(tlsKeyEnv, "")
+	assert.PanicsWithError(t, "set both PAAS_TLS_CERT_FILE and PAAS_TLS_KEY_FILE to serve TLS, or neither",
+		func() { NewWSConfig() })
+}

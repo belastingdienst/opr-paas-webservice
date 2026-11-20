@@ -26,6 +26,16 @@ Responses when the keys cannot be used:
 * The check endpoints answer `422` for a secret that does not decrypt, `503` in encrypt-only mode, and `500` when the keys cannot be loaded.
 * `/readyz` answers `503` while the configured keys cannot be loaded, and in encrypt-only mode also while they cannot encrypt. With private keys, keys that can decrypt but not encrypt (two private keys and no public key, as during a rotation) keep the service ready: the check endpoints still work and only the encrypt endpoints answer `500`. `/healthz` only reports that the process runs.
 
+## TLS
+
+By default the service serves plain HTTP, and TLS ends in front of it, for example at an OpenShift route with `edge` termination. The secrets that clients send then cross the cluster network unencrypted after the route.
+
+To serve TLS from the service itself, set `PAAS_TLS_CERT_FILE` and `PAAS_TLS_KEY_FILE` to a PEM certificate and its private key, for example the `tls.crt` and `tls.key` of a mounted `kubernetes.io/tls` Secret. Set both or neither; the service does not start with only one, or when the files cannot be loaded. A changed certificate, such as one renewed by cert-manager, is used for new connections without a restart; when the changed files cannot be loaded, the previous certificate is kept and an error is logged.
+
+Use a `passthrough` route to keep TLS from the client up to the service, or a `reencrypt` route to keep the hop after the route encrypted. Probes then need `scheme: HTTPS`.
+
+The service keeps Go's TLS defaults. Clients that support it, such as current browsers, curl with OpenSSL 3.5 or later, and Go 1.24 or later, negotiate the hybrid post-quantum key exchange `X25519MLKEM768`, so a recorded session cannot be decrypted later with a quantum computer.
+
 ## Quickstart
 
 One can run this webservice using the provided container image.
